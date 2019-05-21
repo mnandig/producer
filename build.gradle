@@ -1,43 +1,82 @@
 buildscript {
-	repositories {
-		mavenCentral()
-	}
-	dependencies {
-		classpath 'org.springframework.boot:spring-boot-gradle-plugin:1.5.20.RELEASE'
-	}
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath "org.springframework.boot:spring-boot-gradle-plugin:${springBootPluginVersion}"
+        classpath "org.springframework.cloud:spring-cloud-contract-gradle-plugin:2.1.1.RELEASE"
+        classpath("pl.allegro.tech.build:axion-release-plugin:${releasePluginVersion}")
+//        classpath "com.jayway.restassured:rest-assured:2.5.0"
+//        classpath "com.jayway.restassured:spring-mock-mvc:2.5.0"
+    }
+    ext {
+        nexusSnapshotUrl = System.properties['Nexus_SnapShot_URL']
+        nexusReleaseUrl = System.properties['Nexus_Release_URL']
+        nexusEnvironment = System.properties['Nexus_Env']
+        nexusUser = System.properties['Nexus_User']
+        nexusPassword = System.properties['Nexus_Pswd']
+    }
 }
 
 plugins {
-	id 'java'
+    id 'java'
 }
-
-
 apply plugin: 'org.springframework.boot'
+apply plugin: 'maven-publish'
+apply plugin: 'pl.allegro.tech.build.axion-release'
+apply plugin: 'groovy'
+apply plugin: 'spring-cloud-contract'
 
+scmVersion {
+    tag {
+        prefix = rootProject.name
+    }
+}
+project.version = scmVersion.version
 group = 'com.ford.vadr'
-version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '1.8'
+sourceCompatibility = 1.8
 
 
 repositories {
-	mavenCentral()
+    mavenCentral()
+    maven { url "https://repo.spring.io/snapshot" }
+    maven { url "https://repo.spring.io/milestone" }
+    maven { url "https://repo.spring.io/release" }
 }
 
 ext {
-	set('springCloudVersion', 'Edgware.SR5')
-}
-
-dependencies {
-	compile 'org.springframework.boot:spring-boot-starter-data-jpa'
-	compile 'org.springframework.boot:spring-boot-starter-data-neo4j'
-	compile 'org.springframework.boot:spring-boot-starter-web'
-	compileOnly 'org.projectlombok:lombok'
-	testCompile 'org.springframework.boot:spring-boot-starter-test'
-	testCompile 'org.springframework.cloud:spring-cloud-starter-contract-verifier'
+    set('springCloudVersion', 'Finchley.RELEASE')
 }
 
 dependencyManagement {
-	imports {
-		mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-	}
+    imports {
+        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        mavenBom "org.springframework.cloud:spring-cloud-contract-dependencies:${springCloudContractVersion}"
+    }
+}
+
+dependencies {
+    compile 'org.springframework.boot:spring-boot-starter-web'
+    compile("org.projectlombok:lombok:$lombokVersion")
+    compile("io.springfox:springfox-swagger2:$swagger2Version")
+    compile("io.springfox:springfox-swagger-ui:$swagger2Version")
+
+    testCompile 'org.springframework.boot:spring-boot-starter-test'
+//    compile 'blog.svenbayer:spring-cloud-contract-swagger:1.2.1.BUILD-SNAPSHOT'
+    testCompile 'org.springframework.cloud:spring-cloud-starter-contract-verifier:2.1.1.RELEASE'
+//    testCompile "com.jayway.restassured:rest-assured:2.5.0"
+//    testCompile "com.jayway.restassured:spring-mock-mvc:2.5.0"
+//    testCompile 'org.codehaus.groovy:groovy-all:2.4.6'
+//    // example with adding Spock core and Spock Spring
+//    testCompile 'org.spockframework:spock-core:1.0-groovy-2.4'
+//    testCompile 'org.spockframework:spock-spring:1.0-groovy-2.4'
+}
+
+
+contracts{
+    baseClassForTests = "com.ford.vadr.producer.BaseTestClass"
+    baseClassMappings {
+        baseClassMapping(".*userservice.*", "com.ford.vadr.producer.BaseTestClass")
+    }
+
 }
